@@ -303,63 +303,65 @@ func (p *Plugin) PostToDo(info *BitbucketUserInfo) {
 }
 
 func (p *Plugin) GetToDo(ctx context.Context, userInfo *BitbucketUserInfo, bitbucketClient *bitbucket.APIClient) (string, error) {
-	userRepos, err := p.getUserRepositories(ctx, bitbucketClient)
-	if err != nil {
-		return "", errors.Wrap(err, "error occurred while searching for repositories")
-	}
+	return "", nil
 
-	yourAssignments, err := p.getAssignedIssues(ctx, userInfo, bitbucketClient, userRepos)
-	if err != nil {
-		return "", errors.Wrap(err, "error occurred while searching for assignments")
-	}
+	// userRepos, err := p.getUserRepositories(ctx, bitbucketClient)
+	// if err != nil {
+	// 	return "", errors.Wrap(err, "error occurred while searching for repositories")
+	// }
 
-	yourOpenPrs, err := p.getOpenPRs(ctx, userInfo, bitbucketClient, userRepos)
-	if err != nil {
-		return "", errors.Wrap(err, "error occurred while searching for your open PRs")
-	}
+	// yourAssignments, err := p.getAssignedIssues(ctx, userInfo, bitbucketClient, userRepos)
+	// if err != nil {
+	// 	return "", errors.Wrap(err, "error occurred while searching for assignments")
+	// }
 
-	assignedPRs, err := p.getAssignedPRs(ctx, userInfo, bitbucketClient, userRepos)
-	if err != nil {
-		return "", errors.Wrap(err, "error occurred while searching for assigned PRs")
-	}
+	// yourOpenPrs, err := p.getOpenPRs(ctx, userInfo, bitbucketClient, userRepos)
+	// if err != nil {
+	// 	return "", errors.Wrap(err, "error occurred while searching for your open PRs")
+	// }
 
-	text := "##### Your Assignments\n"
+	// assignedPRs, err := p.getAssignedPRs(ctx, userInfo, bitbucketClient, userRepos)
+	// if err != nil {
+	// 	return "", errors.Wrap(err, "error occurred while searching for assigned PRs")
+	// }
 
-	if len(yourAssignments) == 0 {
-		text += "You don't have any assignments.\n"
-	} else {
-		text += fmt.Sprintf("You have %v assignments:\n", len(yourAssignments))
+	// text := "##### Your Assignments\n"
 
-		for _, assign := range yourAssignments {
-			text += getToDoDisplayText(BitbucketBaseURL, assign.Title, assign.Links.Html.Href, "")
-		}
-	}
+	// if len(yourAssignments) == 0 {
+	// 	text += "You don't have any assignments.\n"
+	// } else {
+	// 	text += fmt.Sprintf("You have %v assignments:\n", len(yourAssignments))
 
-	text += "##### Review Requests\n"
+	// 	for _, assign := range yourAssignments {
+	// 		text += getToDoDisplayText(BitbucketBaseURL, assign.Title, assign.Links.Html.Href, "")
+	// 	}
+	// }
 
-	if len(assignedPRs) == 0 {
-		text += "You don't have any pull requests awaiting your review.\n"
-	} else {
-		text += fmt.Sprintf("You have %v pull requests awaiting your review:\n", len(assignedPRs))
+	// text += "##### Review Requests\n"
 
-		for _, assign := range assignedPRs {
-			text += getToDoDisplayText(BitbucketBaseURL, assign.Title, assign.Links.Html.Href, "")
-		}
-	}
+	// if len(assignedPRs) == 0 {
+	// 	text += "You don't have any pull requests awaiting your review.\n"
+	// } else {
+	// 	text += fmt.Sprintf("You have %v pull requests awaiting your review:\n", len(assignedPRs))
 
-	text += "##### Your Open Pull Requests\n"
+	// 	for _, assign := range assignedPRs {
+	// 		text += getToDoDisplayText(BitbucketBaseURL, assign.Title, assign.Links.Html.Href, "")
+	// 	}
+	// }
 
-	if len(yourOpenPrs) == 0 {
-		text += "You don't have any open pull requests.\n"
-	} else {
-		text += fmt.Sprintf("You have %v open pull requests:\n", len(yourOpenPrs))
+	// text += "##### Your Open Pull Requests\n"
 
-		for _, assign := range yourOpenPrs {
-			text += getToDoDisplayText(BitbucketBaseURL, assign.Title, assign.Links.Html.Href, "")
-		}
-	}
+	// if len(yourOpenPrs) == 0 {
+	// 	text += "You don't have any open pull requests.\n"
+	// } else {
+	// 	text += fmt.Sprintf("You have %v open pull requests:\n", len(yourOpenPrs))
 
-	return text, nil
+	// 	for _, assign := range yourOpenPrs {
+	// 		text += getToDoDisplayText(BitbucketBaseURL, assign.Title, assign.Links.Html.Href, "")
+	// 	}
+	// }
+
+	// return text, nil
 }
 
 func (p *Plugin) getUserRepositories(ctx context.Context, bitbucketClient *bitbucket.APIClient) ([]bitbucket.Repository, error) {
@@ -612,43 +614,45 @@ func (p *Plugin) getBitBucketAccountIDToMattermostUsernameMapping(bitbucketAccou
 }
 
 func (p *Plugin) HasUnreads(info *BitbucketUserInfo) bool {
-	ctx := context.Background()
-	bitbucketClient := p.bitbucketConnect(*info.Token)
-
-	userRepos, err := p.getUserRepositories(ctx, bitbucketClient)
-	if err != nil {
-		p.API.LogError("error occurred while searching for repositories", "err", err.Error())
-		return false
-	}
-
-	yourAssignments, err := p.getAssignedIssues(ctx, info, bitbucketClient, userRepos)
-	if err != nil {
-		p.API.LogError("error occurred while searching for assignments", "err", err.Error())
-		return false
-	}
-	if len(yourAssignments) > 0 {
-		return true
-	}
-
-	yourOpenPrs, err := p.getOpenPRs(ctx, info, bitbucketClient, userRepos)
-	if err != nil {
-		p.API.LogError("error occurred while searching for your open PRs", "err", err.Error())
-		return false
-	}
-	if len(yourOpenPrs) > 0 {
-		return true
-	}
-
-	yourPrs, err := p.getAssignedPRs(ctx, info, bitbucketClient, userRepos)
-	if err != nil {
-		p.API.LogError("error occurred while searching for assigned PRs", "err", err.Error())
-		return false
-	}
-	if len(yourPrs) > 0 {
-		return true
-	}
-
 	return false
+
+	// ctx := context.Background()
+	// bitbucketClient := p.bitbucketConnect(*info.Token)
+
+	// userRepos, err := p.getUserRepositories(ctx, bitbucketClient)
+	// if err != nil {
+	// 	p.API.LogError("error occurred while searching for repositories", "err", err.Error())
+	// 	return false
+	// }
+
+	// yourAssignments, err := p.getAssignedIssues(ctx, info, bitbucketClient, userRepos)
+	// if err != nil {
+	// 	p.API.LogError("error occurred while searching for assignments", "err", err.Error())
+	// 	return false
+	// }
+	// if len(yourAssignments) > 0 {
+	// 	return true
+	// }
+
+	// yourOpenPrs, err := p.getOpenPRs(ctx, info, bitbucketClient, userRepos)
+	// if err != nil {
+	// 	p.API.LogError("error occurred while searching for your open PRs", "err", err.Error())
+	// 	return false
+	// }
+	// if len(yourOpenPrs) > 0 {
+	// 	return true
+	// }
+
+	// yourPrs, err := p.getAssignedPRs(ctx, info, bitbucketClient, userRepos)
+	// if err != nil {
+	// 	p.API.LogError("error occurred while searching for assigned PRs", "err", err.Error())
+	// 	return false
+	// }
+	// if len(yourPrs) > 0 {
+	// 	return true
+	// }
+
+	// return false
 }
 
 // getUsername returns the BitBucket username for a given Mattermost user,

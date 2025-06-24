@@ -431,51 +431,57 @@ func (p *Plugin) getConnected(w http.ResponseWriter, r *http.Request) {
 }
 
 func (p *Plugin) getReviews(w http.ResponseWriter, _ *http.Request, userID string) {
-	userInfo, apiErr := p.getBitbucketUserInfo(userID)
-	if apiErr != nil {
-		p.writeAPIError(w, apiErr)
-		return
-	}
+	return
 
-	bitbucketClient := p.bitbucketConnect(*userInfo.Token)
+	// userInfo, apiErr := p.getBitbucketUserInfo(userID)
+	// if apiErr != nil {
+	// 	p.writeAPIError(w, apiErr)
+	// 	return
+	// }
 
-	userRepos, err := p.getUserRepositories(context.Background(), bitbucketClient)
-	if err != nil {
-		p.API.LogError("Error occurred while searching for repositories", "err", err.Error())
-		return
-	}
+	// bitbucketClient := p.bitbucketConnect(*userInfo.Token)
 
-	yourPrs, err := p.getAssignedPRs(context.Background(), userInfo, bitbucketClient, userRepos)
-	if err != nil {
-		p.API.LogError("Error occurred while searching for pull requests", "err", err.Error())
-		return
-	}
+	// userRepos, err := p.getUserRepositories(context.Background(), bitbucketClient)
+	// if err != nil {
+	// 	p.API.LogError("Error occurred while searching for repositories", "err", err.Error())
+	// 	return
+	// }
 
-	p.writeJSON(w, yourPrs)
+	// yourPrs, err := p.getAssignedPRs(context.Background(), userInfo, bitbucketClient, userRepos)
+	// if err != nil {
+	// 	p.API.LogError("Error occurred while searching for pull requests", "err", err.Error())
+	// 	return
+	// }
+
+	// p.writeJSON(w, yourPrs)
 }
 
 func (p *Plugin) getYourPrs(w http.ResponseWriter, _ *http.Request, userID string) {
-	userInfo, apiErr := p.getBitbucketUserInfo(userID)
-	if apiErr != nil {
-		p.writeAPIError(w, apiErr)
-		return
-	}
+	return
 
-	bitbucketClient := p.bitbucketConnect(*userInfo.Token)
+	// userInfo, apiErr := p.getBitbucketUserInfo(userID)
+	// if apiErr != nil {
+	// 	p.writeAPIError(w, apiErr)
+	// 	return
+	// }
 
-	userRepos, err := p.getUserRepositories(context.Background(), bitbucketClient)
-	if err != nil {
-		p.API.LogError("error occurred while searching for repositories", "err", err)
-		return
-	}
+	// return
 
-	openPRs, err := p.getOpenPRs(context.Background(), userInfo, bitbucketClient, userRepos)
-	if err != nil {
-		p.API.LogError("error occurred while searching for pull requests", "err", err)
-		return
-	}
+	// bitbucketClient := p.bitbucketConnect(*userInfo.Token)
 
-	p.writeJSON(w, openPRs)
+	// userRepos, err := p.getUserRepositories(context.Background(), bitbucketClient)
+	// if err != nil {
+	// 	p.API.LogError("error occurred while searching for repositories", "err", err)
+	// 	return
+	// }
+
+	// openPRs, err := p.getOpenPRs(context.Background(), userInfo, bitbucketClient, userRepos)
+	// if err != nil {
+	// 	p.API.LogError("error occurred while searching for pull requests", "err", err)
+	// 	return
+	// }
+
+	// p.writeJSON(w, openPRs)
 }
 
 func (p *Plugin) getPrsDetails(w http.ResponseWriter, r *http.Request, userID string) {
@@ -703,27 +709,29 @@ func (p *Plugin) createIssueComment(w http.ResponseWriter, r *http.Request, user
 }
 
 func (p *Plugin) getYourAssignments(w http.ResponseWriter, _ *http.Request, userID string) {
-	userInfo, apiErr := p.getBitbucketUserInfo(userID)
-	if apiErr != nil {
-		p.writeAPIError(w, apiErr)
-		return
-	}
+	return 
 
-	bitbucketClient := p.bitbucketConnect(*userInfo.Token)
+	// userInfo, apiErr := p.getBitbucketUserInfo(userID)
+	// if apiErr != nil {
+	// 	p.writeAPIError(w, apiErr)
+	// 	return
+	// }
 
-	userRepos, err := p.getUserRepositories(context.Background(), bitbucketClient)
-	if err != nil {
-		p.API.LogError("Error occurred while searching for repositories", "err", err)
-		return
-	}
+	// bitbucketClient := p.bitbucketConnect(*userInfo.Token)
 
-	yourAssignments, err := p.getAssignedIssues(context.Background(), userInfo, bitbucketClient, userRepos)
-	if err != nil {
-		p.API.LogError("Error occurred while searching assigned issues", "err", err)
-		return
-	}
+	// userRepos, err := p.getUserRepositories(context.Background(), bitbucketClient)
+	// if err != nil {
+	// 	p.API.LogError("Error occurred while searching for repositories", "err", err)
+	// 	return
+	// }
 
-	p.writeJSON(w, yourAssignments)
+	// yourAssignments, err := p.getAssignedIssues(context.Background(), userInfo, bitbucketClient, userRepos)
+	// if err != nil {
+	// 	p.API.LogError("Error occurred while searching assigned issues", "err", err)
+	// 	return
+	// }
+
+	// p.writeJSON(w, yourAssignments)
 }
 
 func (p *Plugin) postToDo(w http.ResponseWriter, _ *http.Request, userID string) {
