@@ -90,7 +90,7 @@ func (p *Plugin) initializeWebhookHandler() {
 	p.webhookHandler = webhook.NewWebhook(&subscriptionHandler{p}, &pullRequestReviewHandler{p}, templateRenderer)
 }
 
-func (p *Plugin) bitbucketConnect(token oauth2.Token) (*bitbucket.APIClient, *http.Client) {
+func (p *Plugin) bitbucketConnect(token oauth2.Token) *bitbucket.APIClient {
 	ts := p.getOAuthConfig().TokenSource(context.Background(), &token)
 	auth := context.WithValue(context.Background(), bitbucket.ContextOAuth2, ts)
 	tc := oauth2.NewClient(auth, ts)
@@ -98,7 +98,12 @@ func (p *Plugin) bitbucketConnect(token oauth2.Token) (*bitbucket.APIClient, *ht
 	configBb := bitbucket.NewConfiguration()
 	configBb.HTTPClient = tc
 
-	return bitbucket.NewAPIClient(configBb), tc
+	return bitbucket.NewAPIClient(configBb)
+}
+
+func (p *Plugin) getBitbucketHttpClient(token oauth2.Token) *http.Client {
+	ts := p.getOAuthConfig().TokenSource(context.Background(), &token)
+	return oauth2.NewClient(context.Background(), ts)
 }
 
 func (p *Plugin) OnActivate() error {
@@ -717,7 +722,8 @@ func (p *Plugin) handleDiff(c *plugin.Context, args *model.CommandArgs, paramete
 }
 
 func (p *Plugin) fetchPRDiff(owner, repo string, prID int, info *BitbucketUserInfo) (string, error) {
-	client, httpClient := p.bitbucketConnect(*info.Token)
+	client := p.bitbucketConnect(*info.Token)
+	httpClient := p.getBitbucketHttpClient(*info.Token)
 
 	// Construct raw request to get PR diff
 	url := fmt.Sprintf("https://api.bitbucket.org/2.0/repositories/%s/%s/pullrequests/%d/diff", owner, repo, prID)
