@@ -11,6 +11,8 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"strconv"
+	"io"
 
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
@@ -720,7 +722,7 @@ func (p *Plugin) handleDiff(c *plugin.Context, args *model.CommandArgs, paramete
 	)
 }
 
-func (p *Plugin) fetchPRDiff(owner, repo string, prID int, info *bitbucketUserInfo) (string, error) {
+func (p *Plugin) fetchPRDiff(owner, repo string, prID int, info *BitbucketUserInfo) (string, error) {
 	url := fmt.Sprintf("https://api.bitbucket.org/2.0/repositories/%s/%s/pullrequests/%d/diff", owner, repo, prID)
 
 	req, err := http.NewRequest("GET", url, nil)
@@ -751,11 +753,11 @@ func (p *Plugin) fetchPRDiff(owner, repo string, prID int, info *bitbucketUserIn
 
 func (p *Plugin) uploadDiffFile(args *model.CommandArgs, owner, repo string, prID int, content []byte) (string, error) {
 	fileName := fmt.Sprintf("%s-%s-pr%d.diff", owner, repo, prID)
-	resp, appErr := p.API.UploadFile(content, args.ChannelId, fileName)
+	fileInfo, appErr := p.API.UploadFile(content, args.ChannelId, fileName)
 	if appErr != nil {
 		return "", appErr
 	}
-	return resp.FileInfos[0].Id, nil
+	return fileInfo.Id, nil
 }
 
 func (p *Plugin) getFileLink(fileID string) string {
