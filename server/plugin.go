@@ -90,21 +90,15 @@ func (p *Plugin) initializeWebhookHandler() {
 	p.webhookHandler = webhook.NewWebhook(&subscriptionHandler{p}, &pullRequestReviewHandler{p}, templateRenderer)
 }
 
-func (p *Plugin) bitbucketConnect(token oauth2.Token) *bitbucket.APIClient {
-	// get Oauth token source and client
+func (p *Plugin) bitbucketConnect(token oauth2.Token) (*bitbucket.APIClient, *http.Client) {
 	ts := p.getOAuthConfig().TokenSource(context.Background(), &token)
-
-	// setup Oauth context
 	auth := context.WithValue(context.Background(), bitbucket.ContextOAuth2, ts)
-
 	tc := oauth2.NewClient(auth, ts)
 
-	// create config for bitbucket API
 	configBb := bitbucket.NewConfiguration()
 	configBb.HTTPClient = tc
 
-	// create new bitbucket client API
-	return bitbucket.NewAPIClient(configBb)
+	return bitbucket.NewAPIClient(configBb), tc
 }
 
 func (p *Plugin) OnActivate() error {
@@ -723,7 +717,7 @@ func (p *Plugin) handleDiff(c *plugin.Context, args *model.CommandArgs, paramete
 }
 
 func (p *Plugin) fetchPRDiff(owner, repo string, prID int, info *BitbucketUserInfo) (string, error) {
-	client := p.bitbucketConnect(*info.Token)
+	client, httpClient := p.bitbucketConnect(*info.Token)
 
 	// Construct raw request to get PR diff
 	url := fmt.Sprintf("https://api.bitbucket.org/2.0/repositories/%s/%s/pullrequests/%d/diff", owner, repo, prID)
@@ -733,7 +727,7 @@ func (p *Plugin) fetchPRDiff(owner, repo string, prID int, info *BitbucketUserIn
 		return "", fmt.Errorf("failed to create request: %w", err)
 	}
 
-	resp, err := client.GetConfig().HTTPClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("failed to fetch diff: %w", err)
 	}
