@@ -731,7 +731,7 @@ func (p *Plugin) fetchPRDiff(owner, repo string, prID int, info *BitbucketUserIn
 	}
 
 	// Adjust this based on your auth method
-	req.Header.Set("Authorization", "Bearer "+info.OAuthToken)
+	req.Header.Set("Authorization", "Bearer "+info.Token.AccessToken)
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
