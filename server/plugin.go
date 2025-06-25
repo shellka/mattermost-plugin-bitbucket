@@ -723,32 +723,26 @@ func (p *Plugin) handleDiff(c *plugin.Context, args *model.CommandArgs, paramete
 }
 
 func (p *Plugin) fetchPRDiff(owner, repo string, prID int, info *BitbucketUserInfo) (string, error) {
-	url := fmt.Sprintf("https://api.bitbucket.org/2.0/repositories/%s/%s/pullrequests/%d/diff", owner, repo, prID)
+    client := p.bitbucketConnect(*info.Token)
 
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return "", err
-	}
+    endpoint := fmt.Sprintf("repositories/%s/%s/pullrequests/%d/diff", owner, repo, prID)
 
-	// Adjust this based on your auth method
-	req.Header.Set("Authorization", "Bearer "+info.Token.AccessToken)
+    resp, httpResp, err := client.APIClient.DefaultApi.RepositoriesUsernameRepoSlugPullrequestsPullRequestIdDiffGet(context.Background(), owner, repo, int32(prID))
+    if err != nil {
+        if httpResp != nil && httpResp.StatusCode == 401 {
+            return "", fmt.Errorf("unauthorized – please `/bitbucket connect` again")
+        }
+        return "", fmt.Errorf("Bitbucket API error: %v", err)
+    }
 
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
+    defer httpResp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("Bitbucket API error: %s", resp.Status)
-	}
+    body, err := io.ReadAll(httpResp.Body)
+    if err != nil {
+        return "", fmt.Errorf("error reading diff: %w", err)
+    }
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", err
-	}
-
-	return string(body), nil
+    return string(body), nil
 }
 
 func (p *Plugin) uploadDiffFile(args *model.CommandArgs, owner, repo string, prID int, content []byte) (string, error) {
