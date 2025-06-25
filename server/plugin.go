@@ -682,6 +682,8 @@ func (p *Plugin) getUsername(mmUserID string) (string, error) {
 	return "@" + info.BitbucketUsername, nil
 }
 
+const maxPreviewLen = 15000 // stay under 16383 to be safe
+
 func (p *Plugin) handleDiff(c *plugin.Context, args *model.CommandArgs, parameters []string, info *BitbucketUserInfo) (string, []string) {
 	if len(parameters) != 2 {
 		return "Usage: `/bitbucket diff owner/repo pr-number`", nil
@@ -714,9 +716,16 @@ func (p *Plugin) handleDiff(c *plugin.Context, args *model.CommandArgs, paramete
 
 	link := p.getFileLink(fileID)
 
+	// Truncate preview if needed
+	preview := diff
+	if len(preview) > maxPreviewLen {
+		preview = preview[:maxPreviewLen] + "\n... (truncated)"
+	}
+
+	commandStr := fmt.Sprintf("/bitbucket diff %s %d", repo, prNum)
 	message := fmt.Sprintf(
-		"Full diff for `%s/%s#%d`\n```diff\n%s\n```\n[Download diff as file](%s)",
-		owner, slug, prNum, diff, link,
+		"%s\n[Download diff as file](%s)\n```diff\n%s\n```\n",
+		commandStr, link, preview,
 	)
 
 	return message, []string{fileID}
