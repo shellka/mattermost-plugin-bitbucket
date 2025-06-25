@@ -723,26 +723,35 @@ func (p *Plugin) handleDiff(c *plugin.Context, args *model.CommandArgs, paramete
 }
 
 func (p *Plugin) fetchPRDiff(owner, repo string, prID int, info *BitbucketUserInfo) (string, error) {
-    client := p.bitbucketConnect(*info.Token)
+	client := p.bitbucketConnect(*info.Token)
 
-    endpoint := fmt.Sprintf("repositories/%s/%s/pullrequests/%d/diff", owner, repo, prID)
+	// Construct raw request to get PR diff
+	url := fmt.Sprintf("https://api.bitbucket.org/2.0/repositories/%s/%s/pullrequests/%d/diff", owner, repo, prID)
 
-    resp, httpResp, err := client.DefaultApi.RepositoriesUsernameRepoSlugPullrequestsPullRequestIdDiffGet(context.Background(), owner, repo, int32(prID))
-    if err != nil {
-        if httpResp != nil && httpResp.StatusCode == 401 {
-            return "", fmt.Errorf("unauthorized – please `/bitbucket connect` again")
-        }
-        return "", fmt.Errorf("Bitbucket API error: %v", err)
-    }
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return "", fmt.Errorf("failed to create request: %w", err)
+	}
 
-    defer httpResp.Body.Close()
+	resp, err := client.GetConfig().HTTPClient.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("failed to fetch diff: %w", err)
+	}
+	defer resp.Body.Close()
 
-    body, err := io.ReadAll(httpResp.Body)
-    if err != nil {
-        return "", fmt.Errorf("error reading diff: %w", err)
-    }
+	if resp.StatusCode == http.StatusUnauthorized {
+		return "", fmt.Errorf("unauthorized – please `/bitbucket connect` again")
+	}
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("Bitbucket API error: %s", resp.Status)
+	}
 
-    return string(body), nil
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("failed to read diff body: %w", err)
+	}
+
+	return string(body), nil
 }
 
 func (p *Plugin) uploadDiffFile(args *model.CommandArgs, owner, repo string, prID int, content []byte) (string, error) {
