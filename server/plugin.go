@@ -727,7 +727,7 @@ func (p *Plugin) fetchPRDiff(owner, repo string, prID int, info *BitbucketUserIn
 
     endpoint := fmt.Sprintf("repositories/%s/%s/pullrequests/%d/diff", owner, repo, prID)
 
-    resp, httpResp, err := client.APIClient.DefaultApi.RepositoriesUsernameRepoSlugPullrequestsPullRequestIdDiffGet(context.Background(), owner, repo, int32(prID))
+    resp, httpResp, err := client.DefaultApi.RepositoriesUsernameRepoSlugPullrequestsPullRequestIdDiffGet(context.Background(), owner, repo, int32(prID))
     if err != nil {
         if httpResp != nil && httpResp.StatusCode == 401 {
             return "", fmt.Errorf("unauthorized – please `/bitbucket connect` again")
