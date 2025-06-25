@@ -679,7 +679,7 @@ func (p *Plugin) getUsername(mmUserID string) (string, error) {
 	return "@" + info.BitbucketUsername, nil
 }
 
-func (p *Plugin) handleDiff(c *plugin.Context, args *model.CommandArgs, parameters []string, info *bitbucketUserInfo) string {
+func (p *Plugin) handleDiff(c *plugin.Context, args *model.CommandArgs, parameters []string, info *BitbucketUserInfo) string {
 	if len(parameters) != 2 {
 		return "Usage: `/bitbucket diff owner/repo pr-number`"
 	}
