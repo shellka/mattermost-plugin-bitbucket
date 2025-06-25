@@ -404,6 +404,7 @@ func (p *Plugin) handleSettings(_ *plugin.Context, _ *model.CommandArgs, paramet
 }
 
 type commandHandleFunc func(c *plugin.Context, args *model.CommandArgs, parameters []string, userInfo *BitbucketUserInfo) string
+type commandHandleWithResponseFunc func(c *plugin.Context, args *model.CommandArgs, parameters []string, userInfo *BitbucketUserInfo) (string, []string)
 
 // ExecuteCommand executes a command that has been previously registered via the RegisterCommand API.
 func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*model.CommandResponse, *model.AppError) {

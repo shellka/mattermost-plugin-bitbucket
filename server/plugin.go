@@ -51,7 +51,7 @@ type Plugin struct {
 	BotUserID string
 
 	CommandHandlers map[string]commandHandleFunc
-	CommandHandlersWithResponse map[string]commandHandleFunc
+	CommandHandlersWithResponse map[string]commandHandleWithResponseFunc
 
 	// configurationLock synchronizes access to the configuration.
 	configurationLock sync.RWMutex
@@ -80,7 +80,7 @@ func NewPlugin() *Plugin {
 		"settings":      p.handleSettings,
 	}
 
-	p.CommandHandlersWithResponse = map[string]commandHandleFunc{
+	p.CommandHandlersWithResponse = map[string]commandHandleWithResponseFunc{
 		"diff":			 p.handleDiff,
 	}
 
