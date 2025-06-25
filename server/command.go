@@ -157,11 +157,12 @@ func getAutocompleteData() *model.AutocompleteData {
 	return bitbucket
 }
 
-func (p *Plugin) postCommandPost(args *model.CommandArgs, text string) {
+func (p *Plugin) postCommandPost(args *model.CommandArgs, text string, fileIDs []string) {
 	post := &model.Post{
 		UserId:    p.BotUserID,
 		ChannelId: args.ChannelId,
 		Message:   text,
+		FileIds:   fileIDs,
 	}
 
 	if _, appErr := p.API.CreatePost(post); appErr != nil {
@@ -458,9 +459,9 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*mo
 	}
 
 	if f, ok := p.CommandHandlersWithResponse[action]; ok {
-		message := f(c, args, parameters, info)
+		message, fileIDs := f(c, args, parameters, info)
 		if len(message) > 0 {
-			p.postCommandPost(args, message)
+			p.postCommandPost(args, message, fileIDs)
 		}
 		return &model.CommandResponse{}, nil
 	}

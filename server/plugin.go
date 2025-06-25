@@ -682,9 +682,9 @@ func (p *Plugin) getUsername(mmUserID string) (string, error) {
 	return "@" + info.BitbucketUsername, nil
 }
 
-func (p *Plugin) handleDiff(c *plugin.Context, args *model.CommandArgs, parameters []string, info *BitbucketUserInfo) string {
+func (p *Plugin) handleDiff(c *plugin.Context, args *model.CommandArgs, parameters []string, info *BitbucketUserInfo) (string, []string) {
 	if len(parameters) != 2 {
-		return "Usage: `/bitbucket diff owner/repo pr-number`"
+		return "Usage: `/bitbucket diff owner/repo pr-number`", nil
 	}
 
 	repo := parameters[0]
@@ -692,37 +692,34 @@ func (p *Plugin) handleDiff(c *plugin.Context, args *model.CommandArgs, paramete
 
 	prNum, err := strconv.Atoi(prNumStr)
 	if err != nil {
-		return fmt.Sprintf("Invalid PR number: `%s`", prNumStr)
+		return fmt.Sprintf("Invalid PR number: `%s`", prNumStr), nil
 	}
 
 	ownerRepo := strings.Split(repo, "/")
 	if len(ownerRepo) != 2 {
-		return "Repository must be in the format `owner/repo`"
+		return "Repository must be in the format `owner/repo`", nil
 	}
 	owner, slug := ownerRepo[0], ownerRepo[1]
 
 	diff, err := p.fetchPRDiff(owner, slug, prNum, info)
 	if err != nil {
-		return fmt.Sprintf("Error fetching diff: %v", err)
+		return fmt.Sprintf("Error fetching diff: %v", err), nil
 	}
 
-	lines := strings.Split(diff, "\n")
-	if len(lines) > 100 {
-		lines = lines[:100]
-	}
-	preview := strings.Join(lines, "\n")
-
+	// Upload the full diff
 	fileID, uploadErr := p.uploadDiffFile(args, owner, slug, prNum, []byte(diff))
 	if uploadErr != nil {
-		return fmt.Sprintf("Error uploading diff file: %v", uploadErr)
+		return fmt.Sprintf("Error uploading diff file: %v", uploadErr), nil
 	}
 
 	link := p.getFileLink(fileID)
 
-	return fmt.Sprintf(
-		"Preview of PR `%s/%s#%d`\n```diff\n%s\n```\n@ai please review the code.\n[Download full diff](%s)",
-		owner, slug, prNum, preview, link,
+	message := fmt.Sprintf(
+		"Full diff for `%s/%s#%d`\n```diff\n%s\n```\n[Download diff as file](%s)",
+		owner, slug, prNum, diff, link,
 	)
+
+	return message, []string{fileID}
 }
 
 func (p *Plugin) fetchPRDiff(owner, repo string, prID int, info *BitbucketUserInfo) (string, error) {
