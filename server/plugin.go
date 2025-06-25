@@ -75,6 +75,7 @@ func NewPlugin() *Plugin {
 		"help":          p.handleHelp,
 		"":              p.handleHelp,
 		"settings":      p.handleSettings,
+		"diff":			 p.handleDiff,
 	}
 
 	return p
@@ -674,4 +675,90 @@ func (p *Plugin) getUsername(mmUserID string) (string, error) {
 	}
 
 	return "@" + info.BitbucketUsername, nil
+}
+
+func (p *Plugin) handleDiff(c *plugin.Context, args *model.CommandArgs, parameters []string, info *bitbucketUserInfo) string {
+	if len(parameters) != 2 {
+		return "Usage: `/bitbucket diff owner/repo pr-number`"
+	}
+
+	repo := parameters[0]
+	prNumStr := parameters[1]
+
+	prNum, err := strconv.Atoi(prNumStr)
+	if err != nil {
+		return fmt.Sprintf("Invalid PR number: `%s`", prNumStr)
+	}
+
+	ownerRepo := strings.Split(repo, "/")
+	if len(ownerRepo) != 2 {
+		return "Repository must be in the format `owner/repo`"
+	}
+	owner, slug := ownerRepo[0], ownerRepo[1]
+
+	diff, err := p.fetchPRDiff(owner, slug, prNum, info)
+	if err != nil {
+		return fmt.Sprintf("Error fetching diff: %v", err)
+	}
+
+	lines := strings.Split(diff, "\n")
+	if len(lines) > 100 {
+		lines = lines[:100]
+	}
+	preview := strings.Join(lines, "\n")
+
+	fileID, uploadErr := p.uploadDiffFile(args, owner, slug, prNum, []byte(diff))
+	if uploadErr != nil {
+		return fmt.Sprintf("Error uploading diff file: %v", uploadErr)
+	}
+
+	link := p.getFileLink(fileID)
+
+	return fmt.Sprintf(
+		"Preview of PR `%s/%s#%d`\n```diff\n%s\n```\n@ai please review the code.\n[Download full diff](%s)",
+		owner, slug, prNum, preview, link,
+	)
+}
+
+func (p *Plugin) fetchPRDiff(owner, repo string, prID int, info *bitbucketUserInfo) (string, error) {
+	url := fmt.Sprintf("https://api.bitbucket.org/2.0/repositories/%s/%s/pullrequests/%d/diff", owner, repo, prID)
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return "", err
+	}
+
+	// Adjust this based on your auth method
+	req.Header.Set("Authorization", "Bearer "+info.OAuthToken)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("Bitbucket API error: %s", resp.Status)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	return string(body), nil
+}
+
+func (p *Plugin) uploadDiffFile(args *model.CommandArgs, owner, repo string, prID int, content []byte) (string, error) {
+	fileName := fmt.Sprintf("%s-%s-pr%d.diff", owner, repo, prID)
+	resp, appErr := p.API.UploadFile(content, args.ChannelId, fileName)
+	if appErr != nil {
+		return "", appErr
+	}
+	return resp.FileInfos[0].Id, nil
+}
+
+func (p *Plugin) getFileLink(fileID string) string {
+	siteURL := *p.API.GetConfig().ServiceSettings.SiteURL
+	return fmt.Sprintf("%s/files/%s", siteURL, fileID)
 }

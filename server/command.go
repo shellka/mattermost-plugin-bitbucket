@@ -136,6 +136,11 @@ func getAutocompleteData() *model.AutocompleteData {
 
 	bitbucket.AddCommand(subscriptions)
 
+	diff := model.NewAutocompleteData("diff", "owner/repo pr-number", "Show the diff for a pull request")
+	diff.AddTextArgument("Owner/repo to fetch diff from", "[owner/repo]", "")
+	diff.AddTextArgument("Pull request number", "[pr-number]", `^[0-9]+$`)
+	bitbucket.AddCommand(diff)
+
 	settings := model.NewAutocompleteData("settings", "[setting] [value]", "Update your user settings")
 	settingNotifications := model.NewAutocompleteData("notifications", "", "Turn notifications on/off")
 	settingValue := []model.AutocompleteListItem{{
