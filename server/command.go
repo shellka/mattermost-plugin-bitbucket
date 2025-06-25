@@ -157,6 +157,18 @@ func getAutocompleteData() *model.AutocompleteData {
 	return bitbucket
 }
 
+func (p *Plugin) postCommandPost(args *model.CommandArgs, text string) {
+	post := &model.Post{
+		UserId:    p.BotUserID,
+		ChannelId: args.ChannelId,
+		Message:   text,
+	}
+
+	if _, appErr := p.API.CreatePost(post); appErr != nil {
+		p.API.LogError("Failed to create public post", "error", appErr.Error())
+	}
+}
+
 func (p *Plugin) postCommandResponse(args *model.CommandArgs, text string) {
 	post := &model.Post{
 		UserId:    p.BotUserID,
@@ -441,6 +453,14 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*mo
 		message := f(c, args, parameters, info)
 		if len(message) > 0 {
 			p.postCommandResponse(args, message)
+		}
+		return &model.CommandResponse{}, nil
+	}
+
+	if f, ok := p.CommandHandlersWithResponse[action]; ok {
+		message := f(c, args, parameters, info)
+		if len(message) > 0 {
+			p.postCommandPost(args, message)
 		}
 		return &model.CommandResponse{}, nil
 	}
