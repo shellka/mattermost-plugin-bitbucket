@@ -722,7 +722,6 @@ func (p *Plugin) handleDiff(c *plugin.Context, args *model.CommandArgs, paramete
 }
 
 func (p *Plugin) fetchPRDiff(owner, repo string, prID int, info *BitbucketUserInfo) (string, error) {
-	client := p.bitbucketConnect(*info.Token)
 	httpClient := p.getBitbucketHttpClient(*info.Token)
 
 	// Construct raw request to get PR diff
