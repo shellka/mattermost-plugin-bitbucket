@@ -716,16 +716,16 @@ func (p *Plugin) handleDiff(c *plugin.Context, args *model.CommandArgs, paramete
 
 	link := p.getFileLink(fileID)
 
-	// Truncate preview if needed
-	preview := diff
-	if len(preview) > maxPreviewLen {
-		preview = preview[:maxPreviewLen] + "\n... (truncated)"
+	// Extract preview: filtered diff blocks
+	filtered := filterDiffByExtensions(diff, []string{".cs", ".go", ".ts", ".js", ".py", ".cpp", ".c", ".java", ".rb"})
+	if len(filtered) > maxPreviewLen {
+		filtered = filtered[:maxPreviewLen] + "\n... (truncated)"
 	}
 
 	commandStr := fmt.Sprintf("/bitbucket diff %s %d", repo, prNum)
 	message := fmt.Sprintf(
 		"%s\n[Download diff as file](%s)\n```diff\n%s\n```\n",
-		commandStr, link, preview,
+		commandStr, link, filtered,
 	)
 
 	return message, []string{fileID}
@@ -775,4 +775,47 @@ func (p *Plugin) uploadDiffFile(args *model.CommandArgs, owner, repo string, prI
 func (p *Plugin) getFileLink(fileID string) string {
 	siteURL := *p.API.GetConfig().ServiceSettings.SiteURL
 	return fmt.Sprintf("%s/files/%s", siteURL, fileID)
+}
+
+func filterDiffByExtensions(diff string, allowedExts []string) string {
+	var builder strings.Builder
+	var currentBlock []string
+	var includeBlock bool
+
+	lines := strings.Split(diff, "\n")
+
+	for _, line := range lines {
+		if strings.HasPrefix(line, "diff --git ") {
+			// Check previous block
+			if includeBlock && len(currentBlock) > 0 {
+				builder.WriteString(strings.Join(currentBlock, "\n") + "\n")
+			}
+
+			// Start new block
+			currentBlock = []string{line}
+			includeBlock = false
+
+			// Extract extension
+			parts := strings.Fields(line)
+			if len(parts) >= 3 {
+				filePath := parts[2]
+				ext := filepath.Ext(filePath)
+				for _, allowed := range allowedExts {
+					if ext == allowed {
+						includeBlock = true
+						break
+					}
+				}
+			}
+		} else {
+			currentBlock = append(currentBlock, line)
+		}
+	}
+
+	// Append last block
+	if includeBlock && len(currentBlock) > 0 {
+		builder.WriteString(strings.Join(currentBlock, "\n") + "\n")
+	}
+
+	return builder.String()
 }
